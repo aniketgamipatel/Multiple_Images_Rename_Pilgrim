@@ -142,7 +142,7 @@ if uploaded_files and not st.session_state.processing_complete:
         
         for idx, uploaded_file in enumerate(uploaded_files):
             status_text.text(f"Processing: {uploaded_file.name}")
-                
+            
             image = Image.open(uploaded_file)
             new_filename, img_bytes = process_image(image, uploaded_file.name)
             
@@ -179,7 +179,7 @@ if st.session_state.processing_complete and st.session_state.processed_images:
             data=st.session_state.processed_images[0][1],
             file_name=st.session_state.processed_images[0][0],
             mime="image/png",
-            
+            use_container_width=True
         )
     else:
         # Create ZIP file
@@ -203,7 +203,7 @@ if st.session_state.processing_complete and st.session_state.processed_images:
             data=zip_buffer.getvalue(),
             file_name="renamed_images.zip",
             mime="application/zip",
-            width='stretch'
+            use_container_width=True
         )
     
     # Show preview of renamed files
@@ -214,7 +214,7 @@ if st.session_state.processing_complete and st.session_state.processed_images:
             st.text(f"... and {len(st.session_state.processed_images) - 10} more")
     
     # Process new images button
-    if st.button("🔄 Process New Images", width='stretch'):
+    if st.button("🔄 Process New Images", use_container_width=True):
         reset_processing()
         st.rerun()
 
