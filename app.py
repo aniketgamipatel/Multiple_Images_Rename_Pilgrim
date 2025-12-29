@@ -159,64 +159,67 @@ if uploaded_files and not st.session_state.processing_complete:
         st.rerun()
 
 # Display results and download buttons
-if st.session_state.processing_complete and st.session_state.processed_images:
-    st.success("✅ Processing Complete!")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("✅ Passed", len(st.session_state.processed_images))
-    with col2:
-        st.metric("❌ Failed", st.session_state.failed_count)
-    
-    st.divider()
-    
-    # Download section
-    st.subheader("📥 Download Results")
-    
-    if len(st.session_state.processed_images) == 1:
-        st.download_button(
-            label="⬇️ Download Renamed Image",
-            data=st.session_state.processed_images[0][1],
-            file_name=st.session_state.processed_images[0][0],
-            mime="image/png",
-            use_container_width=True
-        )
+if st.session_state.processing_complete:
+    if st.session_state.processed_images:
+        st.success("✅ Processing Complete!")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("✅ Passed", len(st.session_state.processed_images))
+        with col2:
+            st.metric("❌ Failed", st.session_state.failed_count)
+        
+        st.divider()
+        
+        # Download section
+        st.subheader("📥 Download Results")
+        
+        if len(st.session_state.processed_images) == 1:
+            st.download_button(
+                label="⬇️ Download Renamed Image",
+                data=st.session_state.processed_images[0][1],
+                file_name=st.session_state.processed_images[0][0],
+                mime="image/png",
+                use_container_width=True
+            )
+        else:
+            # Create ZIP file
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                used_names = {}
+                for filename, img_bytes in st.session_state.processed_images:
+                    if filename in used_names:
+                        used_names[filename] += 1
+                        name_parts = filename.rsplit('.', 1)
+                        filename = f"{name_parts[0]}_{used_names[filename]}.{name_parts[1]}"
+                    else:
+                        used_names[filename] = 0
+                    
+                    zip_file.writestr(filename, img_bytes)
+            
+            zip_buffer.seek(0)
+            
+            st.download_button(
+                label=f"⬇️ Download All as ZIP ({len(st.session_state.processed_images)} images)",
+                data=zip_buffer.getvalue(),
+                file_name="renamed_images.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
+        
+        # Show preview of renamed files
+        with st.expander("👁️ Preview Renamed Files"):
+            for idx, (filename, _) in enumerate(st.session_state.processed_images[:10], 1):
+                st.text(f"{idx}. {filename}")
+            if len(st.session_state.processed_images) > 10:
+                st.text(f"... and {len(st.session_state.processed_images) - 10} more")
+        
+        # Process new images button
+        if st.button("🔄 Process New Images", use_container_width=True):
+            reset_processing()
+            st.rerun()
     else:
-        # Create ZIP file
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            used_names = {}
-            for filename, img_bytes in st.session_state.processed_images:
-                if filename in used_names:
-                    used_names[filename] += 1
-                    name_parts = filename.rsplit('.', 1)
-                    filename = f"{name_parts[0]}_{used_names[filename]}.{name_parts[1]}"
-                else:
-                    used_names[filename] = 0
-                
-                zip_file.writestr(filename, img_bytes)
-        
-        zip_buffer.seek(0)
-        
-        st.download_button(
-            label=f"⬇️ Download All as ZIP ({len(st.session_state.processed_images)} images)",
-            data=zip_buffer.getvalue(),
-            file_name="renamed_images.zip",
-            mime="application/zip",
-            use_container_width=True
-        )
-    
-    # Show preview of renamed files
-    with st.expander("👁️ Preview Renamed Files"):
-        for idx, (filename, _) in enumerate(st.session_state.processed_images[:10], 1):
-            st.text(f"{idx}. {filename}")
-        if len(st.session_state.processed_images) > 10:
-            st.text(f"... and {len(st.session_state.processed_images) - 10} more")
-    
-    # Process new images button
-    if st.button("🔄 Process New Images", use_container_width=True):
-        reset_processing()
-        st.rerun()
-
-elif uploaded_files and st.session_state.processing_complete:
-    st.info("👆 Click 'Process Images' button to start processing")
+        st.warning("⚠️ No images could be processed. Please check if Tesseract is installed correctly.")
+        if st.button("🔄 Try Again", use_container_width=True):
+            reset_processing()
+            st.rerun()
