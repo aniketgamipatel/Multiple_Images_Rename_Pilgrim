@@ -1,0 +1,7 @@
+# python -m pip install --upgrade pip setuptools wheel
+
+
+# opencv-python-headless 
+pytesseract 
+pillow
+streamlit
